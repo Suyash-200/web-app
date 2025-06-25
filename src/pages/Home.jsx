@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { useProductsQuery, useCategoriesQuery } from '../utils/api';
+import React, { useState, useEffect } from 'react';
+import { fetchProducts, fetchCategories } from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SortOptions from '../components/SortOptions';
@@ -7,16 +7,55 @@ import Pagination from '../components/Pagination';
 import Loader from '../loader/Loader';
 
 const Home = () => {
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [priceRange, setPriceRange] = useState(1000);
   const [sortOption, setSortOption] = useState('price-asc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const productsPerPage = 10;
 
-   const { data: products = [], isLoading } = useProductsQuery();
-  const { data: categories = [] } = useCategoriesQuery();
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [productsData, categoriesData] = await Promise.all([
+          fetchProducts(),
+          fetchCategories(),
+        ]);
+        setProducts(productsData);
+        setFilteredProducts(productsData);
+        setCategories(categoriesData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setLoading(false);
+      }
+    };
 
- const sortProducts = (productsToSort, option) => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    let result = [...products];
+    
+    // Apply category filter
+    if (selectedCategory) {
+      result = result.filter(product => product.category === selectedCategory);
+    }
+    
+    // Apply price filter
+    result = result.filter(product => product.price <= priceRange);
+    
+    // Apply sorting
+    result = sortProducts(result, sortOption);
+    
+    setFilteredProducts(result);
+    setCurrentPage(1);
+  }, [selectedCategory, priceRange, sortOption, products]);
+
+  const sortProducts = (productsToSort, option) => {
     switch (option) {
       case 'price-asc':
         return [...productsToSort].sort((a, b) => a.price - b.price);
@@ -32,20 +71,6 @@ const Home = () => {
         return productsToSort;
     }
   };
-  
- const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    if (selectedCategory) {
-      result = result.filter(product => product.category === selectedCategory);
-    }
-
-    result = result.filter(product => product.price <= priceRange);
-
-    return sortProducts(result, sortOption);
-  }, [products, selectedCategory, priceRange, sortOption]);
-
- 
 
   const handleCategoryChange = category => {
     setSelectedCategory(prev => (prev === category ? '' : category));
@@ -65,7 +90,7 @@ const Home = () => {
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
 
-  if (isLoading) {
+  if (loading) {
     return <Loader/>
   }
 

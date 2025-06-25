@@ -1,23 +1,35 @@
-
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useProductQuery } from '../utils/api';
+import { fetchProduct } from '../utils/api';
 import ProductDetail from '../components/ProductDetail';
 import Loader from '../loader/Loader';
 
 const ProductDetailPage = ({ addToCart }) => {
   const { id } = useParams();
-  const { data: product, isLoading, isError } = useProductQuery(id);
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const productData = await fetchProduct(id);
+        setProduct(productData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading product:', error);
+        setLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [id]);
 
   const handleAddToCart = () => {
     addToCart(product);
   };
 
-  if (isLoading) {
+  if (loading) {
     return <Loader/>
-  }
-
-  if (isError) {
-    return <div className="text-center py-8">Error loading product</div>;
   }
 
   if (!product) {
