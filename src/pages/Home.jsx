@@ -40,15 +40,12 @@ const Home = () => {
   useEffect(() => {
     let result = [...products];
     
-    // Apply category filter
     if (selectedCategory) {
       result = result.filter(product => product.category === selectedCategory);
     }
     
-    // Apply price filter
     result = result.filter(product => product.price <= priceRange);
     
-    // Apply sorting
     result = sortProducts(result, sortOption);
     
     setFilteredProducts(result);
@@ -84,7 +81,6 @@ const Home = () => {
     setSortOption(e.target.value);
   };
 
-  // Pagination logic
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
